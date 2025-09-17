@@ -1,0 +1,5 @@
+https://telugu.filmibeat.com/rss/
+https://www.cinejosh.com/rss-feed.html
+https://www.teluguone.com/news/rssDetails.rss
+https://telugu.oneindia.com/rss/
+# add more feeds as you find them, one per line. Lines starting with # are ignored.

@@ -1,0 +1,43 @@
+name: Daily Telugu Trends
+
+# allow the workflow to push commits
+permissions:
+  contents: write
+
+on:
+  schedule:
+    - cron: '0 3 * * *'   # runs daily at 03:00 UTC (~08:30 IST). Adjust if you want a different time.
+  workflow_dispatch:
+
+jobs:
+  build-and-post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install feedparser
+
+      - name: Run daily trends script
+        run: |
+          python scripts/daily_trends_telugu.py
+
+      - name: Commit generated post (if any)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add _posts || true
+          if git diff --cached --quiet; then
+            echo "No new posts to commit."
+            exit 0
+          fi
+          git commit -m "chore: add daily Telugu trends post"
+          git push
