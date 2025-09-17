@@ -1,13 +1,12 @@
 name: Daily Telugu Trends
 
-# allow the workflow to push commits
 permissions:
   contents: write
 
 on:
-  schedule:
-    - cron: '0 3 * * *'   # runs daily at 03:00 UTC (~08:30 IST). Adjust if you want a different time.
   workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'
 
 jobs:
   build-and-post:
@@ -15,29 +14,52 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install deps
         run: |
           python -m pip install --upgrade pip
           pip install feedparser
 
-      - name: Run daily trends script
+      - name: Run script
         run: |
+          set -x
           python scripts/daily_trends_telugu.py
 
-      - name: Commit generated post (if any)
+      - name: Show generated files
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "actions@github.com"
-          git add _posts || true
-          if git diff --cached --quiet; then
-            echo "No new posts to commit."
+          echo "List _posts:"
+          ls -la _posts || true
+          echo "Show sample contents:"
+          head -n 50 _posts/* || true
+
+      - name: Show git status and diff
+        run: |
+          git status --porcelain
+          git add -A
+          git status --porcelain
+          git diff --staged || true
+          if git diff --staged --quiet; then
+            echo "No staged changes"
             exit 0
           fi
-          git commit -m "chore: add daily Telugu trends post"
-          git push
+          git commit -m "chore: add daily Telugu trends post" || echo "commit skipped"
+
+      - name: Push changes (with PAT fallback)
+        env:
+          PAT: ${{ secrets.PAT_FOR_PUSH }}
+        run: |
+          # If PAT is provided, use it to push; otherwise rely on default token
+          if [ -n "${PAT}" ]; then
+            echo "Pushing with PAT"
+            git push https://x-access-token:${PAT}@github.com/${{ github.repository }} HEAD:${{ github.ref }}
+          else
+            echo "Pushing with default token"
+            git push
+          fi
